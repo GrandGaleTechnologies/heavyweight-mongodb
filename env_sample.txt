@@ -1,3 +1,2 @@
 DEBUG=true
-SECRET_KEY=
-POSTGRES_DATABASE_URL=postgresql://<postgres-username>:<postgres-password>@localhost:5432/<the-name-of-your-db>
+MONGODB_URL=mongodb://<username>:<password>@localhost:27017

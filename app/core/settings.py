@@ -13,11 +13,8 @@ class Settings(BaseSettings):
     # App
     DEBUG: bool = os.environ.get("DEBUG")
 
-    # Security
-    SECRET_KEY: str = os.environ.get("SECRET_KEY")
-
     # DB Settings
-    POSTGRES_DATABASE_URL: str = os.environ.get("POSTGRES_DATABASE_URL")
+    MONGODB_URL: str = os.environ.get("MONGODB_URL")
 
 
 @lru_cache

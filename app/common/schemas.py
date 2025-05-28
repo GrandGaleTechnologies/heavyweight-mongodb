@@ -10,7 +10,7 @@ class ResponseSchema(BaseModel):
     Generic response schema for the application.
     """
 
-    status: str = Field(description="The status of the request", default="success")
+    msg: str = Field(description="The msg of the request", default="success")
     data: Any = Field(description="The data")
 
 

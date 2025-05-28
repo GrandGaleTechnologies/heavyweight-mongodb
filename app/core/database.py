@@ -1,19 +1,55 @@
-"""This module contains the database configuration for the application."""
+from functools import lru_cache
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import declarative_base
+from pymongo import AsyncMongoClient
 
 from app.core.settings import get_settings
 
+# Globals
 settings = get_settings()
 
-engine = create_engine(
-    url=settings.POSTGRES_DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=100,  # The size of the connection pool
-    max_overflow=50,  # The maximum number of connections that can be opened beyond the pool size. Set to -1 for no limit.
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-DBBase = declarative_base()
+# Constants.
+DBNAME = "main"
+# NOTE: key = name of the collection, items = indexes
+COLLECTIONS = {"test": ["id"]}
+
+
+@lru_cache()
+def get_client():
+    """
+    Get mongodb client
+    """
+    return AsyncMongoClient(
+        settings.MONGODB_URL,
+        tz_aware=True,
+        uuidRepresentation="standard",
+    )
+
+
+async def setup_mongodb():
+    """
+    Setup MongoDB database and collections
+    """
+    # Get client
+    client = get_client()
+
+    # Check if DB exists (Mongo creates DBs/collections lazily)
+    existing_dbs = await client.list_database_names()
+    if DBNAME not in existing_dbs:
+        # Trigger DB creation with dummy insert
+        dummy_db = client["main"]
+        await dummy_db["__init__"].insert_one({"_init": True})
+        await dummy_db["__init__"].drop()
+
+    db = client[DBNAME]
+
+    # Check if collection exists
+    existing_collections = await db.list_collection_names()
+    for collection, indexes in COLLECTIONS.items():
+        if collection not in existing_collections:
+            col = await db.create_collection(collection)
+
+            for index in indexes:
+                await col.create_index(index)
+
+    return db

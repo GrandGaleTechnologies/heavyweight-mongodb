@@ -2,13 +2,15 @@
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-import jwt
-from datetime import datetime, timedelta
+
 from app.core.settings import get_settings
 
+# Globals
 ph = PasswordHasher()
 settings = get_settings()
 
+
+# Constants
 HASHING_ALGORITHM = "HS256"
 
 
@@ -38,22 +40,3 @@ def verify_password(plain_password: str, hashed_password: str):
         return ph.verify(hash=str(hashed_password), password=plain_password)
     except VerifyMismatchError:
         return False
-
-
-def create_access_token(
-        data: dict,
-        expires_delta: timedelta = timedelta(minutes=60),
-):
-    """This function creates a JWT token
-
-    Args:
-        data (dict): The data to be encoded
-
-    Returns:
-        str: The JWT token
-    """
-    to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
-
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=HASHING_ALGORITHM) # noqa

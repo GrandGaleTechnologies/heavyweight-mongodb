@@ -3,36 +3,35 @@ version: '3.8'
 services:
   heavyweight_fastapi:
     build: .
-    command: bash -c 'while !</dev/tcp/heavyweight_db/5432; do sleep 1; done; alembic upgrade head; uvicorn app.main:app --host 0.0.0.0 --port 8000'
+    command: bash -c 'while !</dev/tcp/heavyweight_db/27017; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 8000'
     volumes:
       - .:/app
     ports:
       - 8000:8000
     environment:
       - DEBUG=true
-      - SECRET_KEY=supersecretkey
-      - POSTGRES_DATABASE_URL=postgresql://heavyweight:backend@heavyweight_db:5432/heavyweight_db
+      - MONGODB_URL=mongodb://heavyweight:backend@heavyweight_db:27017
     depends_on:
       - heavyweight_db
     networks:
       - heavyweight_network
 
   heavyweight_db:
-    image: postgres:15-alpine
+    image: mongo:7
+    container_name: heavyweight_db
+    restart: unless-stopped
+    ports:
+      - 27017:27017
     volumes:
-      - heavyweight_volume:/var/lib/postgresql/data
-    expose:
-      - 5432
+      - mongodb_data:/data/db
     environment:
-      - POSTGRES_USER=heavyweight
-      - POSTGRES_PASSWORD=backend
-      - POSTGRES_DB=heavyweight_db
+      - MONGO_INITDB_ROOT_USERNAME=heavyweight
+      - MONGO_INITDB_ROOT_PASSWORD=backend
     networks:
       - heavyweight_network
 
 volumes:
-  heavyweight_volume:
-
+  mongodb_data:
 
 networks:
   heavyweight_network:

@@ -3,14 +3,27 @@
 from contextlib import asynccontextmanager
 
 from anyio import to_thread
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
 
-from app.common.dependencies import get_db
+from app.common.exceptions import (
+    BadGatewayError,
+    CustomHTTPException,
+    InternalServerError,
+)
+from app.core.database import get_client, setup_mongodb
+from app.core.handlers import (
+    bad_gateway_error_exception_handler,
+    base_exception_handler,
+    custom_http_exception_handler,
+    internal_server_error_exception_handler,
+    request_validation_exception_handler,
+)
 from app.core.settings import get_settings
-from app.example_module.apis import router as example_router
+from app.sample_module.apis import router as example_router
 
 # Globals
 settings = get_settings()
@@ -27,6 +40,10 @@ async def lifespan(_: FastAPI):
     print("Increasing threadpool...")
     limiter = to_thread.current_default_thread_limiter()
     limiter.total_tokens = 1000
+
+    # Setup mongodb
+    print("Setting up mongodb...")
+    await setup_mongodb()
 
     # Shutdown
     yield
@@ -61,12 +78,23 @@ app.add_middleware(
 )
 
 
+# Exception Handlers
+app.add_exception_handler(Exception, base_exception_handler)
+app.add_exception_handler(RequestValidationError, request_validation_exception_handler)  # type: ignore
+app.add_exception_handler(InternalServerError, internal_server_error_exception_handler)  # type: ignore
+app.add_exception_handler(BadGatewayError, bad_gateway_error_exception_handler)  # type: ignore
+app.add_exception_handler(CustomHTTPException, custom_http_exception_handler)  # type: ignore
+
+
 # Health Check
 @app.get("/health", status_code=200, include_in_schema=False)
-async def health_check(_=Depends(get_db)):
-    """This is the health check endpoint"""
+async def health_check():
+    """
+    This is the health check endpoint
+    """
+    get_client()
     return {"status": "ok"}
 
 
 # Routers
-app.include_router(example_router, prefix="/example", tags=["Example Docs"])
+app.include_router(example_router, prefix="/users", tags=["Example Docs"])
