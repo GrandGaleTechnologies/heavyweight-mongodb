@@ -10,6 +10,7 @@ services:
       - 8000:8000
     environment:
       - DEBUG=true
+      - LOGFIRE_TOKEN=
       - MONGODB_URL=mongodb://heavyweight:backend@heavyweight_db:27017
     depends_on:
       - heavyweight_db

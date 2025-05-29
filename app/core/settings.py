@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # App
     DEBUG: bool = os.environ.get("DEBUG")
 
+    # Logfire
+    LOGFIRE_TOKEN: str | None = os.environ.get("LOGFIRE_TOKEN")
+
     # DB Settings
     MONGODB_URL: str = os.environ.get("MONGODB_URL")
 

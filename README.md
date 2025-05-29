@@ -1,149 +1,211 @@
-## Heavyweight(FastAPI) Starter Template for Large Applications
+# 🚀 Heavyweight Mongodb FastAPI Template
 
-This repository provides a robust template for creating powerful FastAPI applications that leverage Postgres and Alembic. Inspired by [Radoslav Georgiev's Django Structure for Scale lecture](https://youtu.be/yG3ZdxBb1oo?si=D6A9dHyhKb_Kf-J7) and my own personal experience, this template offers a structured approach to building scalable web applications.
+A robust, production-ready FastAPI template using MongoDB for high-performance, schema-flexible applications. Built on GrandGale Technologies' coding standards, it provides a modular structure, async Motor integration, automatic collection/index setup, and Logfire logging.
 
-### Project Structure
-```
-.vscode
-alembic/
+Inspired by [FastAPI guidelines](https://github.com/GrandGaleTechnologies/fastapi_guidelines) and enterprise best practices, it’s designed for rapid development and scalable deployments.
+
+## 📑 Table of Contents
+
+* [✨ Features](#-features)
+* [📁 Project Structure](#-project-structure)
+* [💡 Getting Started](#-getting-started)
+* [⚙️ Database Setup](#️-database-setup)
+* [🛠️ Example Module Snippets](#️-example-module-snippets)
+* [🎗 License](#-license)
+* [🤝 Contribute](#-contribute)
+* [📬 Contact](#-contact)
+
+## ✨ Features
+
+* **MongoDB** integration via async Motor client
+* **Automatic collections & index creation** on startup (`setup_mongodb`)
+* **Optional Logfire** instrumentation: set `LOGFIRE_TOKEN` to enable logging; ignored if unset ([Logfire docs](https://logfire.io/docs))
+* **Modular codebase** following GrandGale standards
+* **Optional `uvloop`** support for enhanced async performance (Linux/macOS)
+
+## 📁 Project Structure
+
+```plaintext
+.vscode/
 app/
-    common/
-        __init__.py
-        dependencies.py
-        paginators.py
-        regex.py
-        schemas.py
-        security.py
-        types.py
-    config/
-        __init__.py
-        database.py
-        settings.py
-    example_module/
-        __init__.py
-        apis.py
-        models.py
-        schemas.py
-        selectors.py
-        services.py
+  core/
+    database.py       # get_client(), setup_mongodb(), COLLECTIONS
+    settings.py       # pydantic settings loader (MONGODB_URL, JWT secrets, LOGFIRE_TOKEN)
+    handlers.py       # Exception handlers
+
+  sample_module/
     __init__.py
-    main.py
+    apis.py           # Where our api endpoints go
+    db.py             # Where we keep our collection getters i.e. get_user_collection()
+    exceptions.py     # Where we keep our module specific exceptions i.e. UserNotFound
+    schemas.py        # base, doc, create, edit, response, paginated schemas
+    selectors.py      # data retrieval functions (e.g., get_user_by_id)
+    services.py       # business logic, CRUD operations
+
+common/
+  __init__.py
+  annotations.py      # General annotations i.e. PaginationParams
+  depdencies.py       # General dependencies i.e. get_pagination_params
+  exceptions.py       # General exceptions i.e. NotFound
+  security.py         # password hashing, token utilities
+  pagination.py       # pagination params & metadata helper
+  types.py            # General types i.e. PaginationParamsType
+
+tests/
+  __init__.py
+
+.flake8
 .gitignore
-alembic.ini
+.pylintrc
 docker-compose.yml
 Dockerfile
-env_sample.txt
+.env_sample
+pytest.init
 railway.toml
+README.md
 requirements.txt
 start.sh
 ```
 
-### Components
+## 💡 Getting Started
 
-**.vscode:** Configuration files for Visual Studio Code.
+### Prerequisites
 
-**alembic/:** Contains Alembic settings and migrations.
+* Docker & Docker Compose (optional)
+* using pip
 
-**config/:** Holds project settings.
-- **database.py:** Manages database connection, session settings, and the base database model.
-- **settings.py:** Utilizes pydantic_settings to load environment variables. Change the `SECRET_KEY` from the default value on Railway.
+### 1. Clone the repo
 
-**app/:** The main FastAPI project directory.
-  - **common/:**:
-    - **dependencies.py:** The common dependencies used by all the modules
-    - **paginators.py:** The collection of helpers for response pagination
-    - **regex.py:** Where common regular expressions will be kept
-    - **schemas.py:** Where you will keep your general/generic schemas
-    - **security.py:** Where the authentication functions are kept
-    - **types.py:** Where general/generic types are kept
+```bash
+git clone https://github.com/GrandGaleTechnologies/heavyweight-mongodb
+cd heavyweight-mongodb
+```
 
-  - **config/:** Holds project settings.
-    - **database.py:** Manages database connection, session settings, and the base database model.
-    - **settings.py:** Utilizes pydantic_settings to load environment variables. Change the `SECRET_KEY` from the default value on Railway.
+### 2. Install dependencies with `pip`
 
-  - **example_module/:**
-    An Example of how you might structure your different modules/apps, doing it this way makes it easy to decouple/seggregate
-    - **apis.py:** Houses endpoints like `user_create`, `user_login`, and `user_details`.
-    - **models.py:** Uses SQLAlchemy to draft the user table. Alembic handles migrations.
-    - **schemas.py:** Defines schemas for create, details, login, and token requests.
-    - **selectors.py:** Manages GET operations, fetching data from the database.
-    - **services.py:** Handles POST, PUT, PATCH, and DELETE operations, manipulating database data.
-  - **main.py:** Entry point of the application
+```bash
+NOTE: py or python3 depending on your OS
+$ py -m venv .venv
+$ .venv\Scripts\activate # for Windows
+$ pip install -r requirements.txt
+```
 
-**.gitignore:** This specifies which folders/files to not push to github
-**env_sample.txt:** Sample environment variable list. Create a `.env` file and provide values.
+### 3. Configure environment
 
-### Getting Started
+Copy `.env_sample` to `.env` and set:
 
-1. Setup Virtual Environment (If you are not using docker)
-   ```shell
-   $ py -m venv .venv
-   $ .venv\Scripts\activate
-   ```
-   NOTE: If you are using VsCode and you see a popup that says use env as workspace env then click yes
+```dotenv
+DEBUG=true
+LOGFIRE_TOKEN=    # optional: enable Logfire if set
+MONGODB_URL=mongodb://<user>:<pass>@host:27017
+```
 
-</br>
-2. Install dependencies:
-   Locally
+### 4. Startup: automatic DB & index setup
 
-   ```shell
-   $ pip install -r requirements.txt
-   ```
-</br>
-    With Docker
-   
-   ```shell
-   docker-compose up
-   ```
-</br>
+The `setup_mongodb()` function runs at application startup to create any missing collections and indexes defined in `app.core.database.COLLECTIONS`.
 
-3. Create a `.env` file and input environment variables.
-</br>
+### 5. Run the application
 
-4. Initialize database tables:
-   ```
-   alembic upgrade head
-   ```
+#### Development mode
 
-</br>
+```bash
+$ fastapi dev
+```
 
-5. Start the application in development mode:
-   ```
-   fastapi dev
-   ```
-  In production use
-  ```
-  fastapi run
-  ```
-</br>
+#### Production mode
 
-6. Test the application by making requests to endpoints.
+```bash
+$ fastapi run
+```
 
-### Contribute to the Project
+## ⚙️ Database Setup (app/core/database.py)
 
-We welcome contributions from the community to make this FastAPI Starter Template even better. If you have ideas for improvements, new features, or bug fixes, feel free to:
+```python
+from functools import lru_cache
+from pymongo import AsyncIOMotorClient
+from app.core.settings import get_settings
 
-- Fork the repository and create a new branch for your contribution.
-- Submit pull requests to propose changes to the project.
-- Engage in discussions and share your thoughts on enhancements.
+settings = get_settings()
+DBNAME = "main"
+COLLECTIONS = {"test": ["id"]}
 
-By contributing, you help make this template more valuable for developers building FastAPI applications. Together, we can create a robust foundation for large-scale projects. Thank you for your support!
+@lru_cache()
+def get_client():
+    return AsyncIOMotorClient(
+        settings.MONGODB_URL,
+        tz_aware=True,
+        uuidRepresentation="standard",
+    )
 
-For detailed information, refer to the following resources:
+async def setup_mongodb():
+    client = get_client()
+    db = client[DBNAME]
+    existing = await db.list_collection_names()
+    for name, indexes in COLLECTIONS.items():
+        if name not in existing:
+            col = await db.create_collection(name)
+            for idx in indexes:
+                await col.create_index(idx)
+    return db
+```
 
-- FastAPI documentation: https://fastapi.tiangolo.com/
-- Alembic documentation: https://alembic.sqlalchemy.org/en/latest/
-- Django Structure for Scale lecture: https://youtu.be/yG3ZdxBb1oo?si=D6A9dHyhKb_Kf-J7
+*Add new collections or indexes by updating `COLLECTIONS` and restarting the app.*
 
+## 🛠️ Example Module Snippets
 
-### Contact
+### `app/sample_module/db.py`
 
-If you have any questions or suggestions, feel free to reach out to me:
-(P.S I am looking for a job, i consult and i tutor :)
+```python
+from functools import lru_cache
+from app.core.database import get_client
 
-- Name: Bello Shehu Ango
-- Email: angobello0@gmail.com
-- GitHub: https://github.com/Grey-A
-- Linkedin: https://linkedin.com/in/angobello0
-- Upwork: https://www.upwork.com/freelancers/~01bb1007bf8311388a
-- Instagram: https://www.instagram.com/bello_ango0/
+@lru_cache()
+def get_user_collection():
+    return get_client()["main"].get_collection("test")
+```
+
+This is used to get collections, by wrapping it in a lru_cache it returns the same collections obj on subsequent calls *curtesy of fastapi docs on pydantic-settings but we still arent super sure if this has any side effects.
+
+### `app/sample_module/selectors.py`
+
+```python
+async def get_user_by_id(id: str, raise_exc=True):
+    col = get_user_collection()
+    user = await col.find_one({"id": id})
+    if not user and raise_exc:
+        raise UserNotFound()
+    return user
+```
+
+### `app/sample_module/apis.py`
+
+```python
+@router.get("/{user_id}/", response_model=UserResponse)
+async def route_user_details(user_id: str):
+    user = await selectors.get_user_by_id(user_id)
+    return {"data": user}
+
+@router.get("", response_model=PaginatedUserListResponse)
+async def route_user_list(pag: PaginationParams):
+    col = get_user_collection()
+    filters = {}  # build filters...
+    cursor = col.find(filters).sort("first_name", ASCENDING)
+    items = [doc async for doc in cursor.skip(...).limit(...)]
+    total = await col.count_documents(filters)
+    return {"data": items, "meta": get_pagination_metadata_mongo(total, len(items), pag)}
+```
+
+## 🎗 License
+
+MIT License — see [LICENSE](LICENSE).
+
+## 🤝 Contribute
+
+Fork, branch, and PR. Follow [FastAPI guidelines](https://github.com/GrandGaleTechnologies/fastapi_guidelines).
+
+## 📬 Contact
+
+* **Name:** GrandGale Technologies
+* **Email:** [admin@grandgale.tech](mailto:angobello0@gmail.com)
+* **GitHub:** [https://github.com/GrandGaleTechnologies](https://github.com/GrandGaleTechnologies)
+* **LinkedIn:** [https://linkedin.com/in/angobello0](https://linkedin.com/in/angobello0)

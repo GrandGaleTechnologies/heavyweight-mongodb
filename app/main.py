@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 
+import logfire
 from anyio import to_thread
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -84,6 +85,17 @@ app.add_exception_handler(RequestValidationError, request_validation_exception_h
 app.add_exception_handler(InternalServerError, internal_server_error_exception_handler)  # type: ignore
 app.add_exception_handler(BadGatewayError, bad_gateway_error_exception_handler)  # type: ignore
 app.add_exception_handler(CustomHTTPException, custom_http_exception_handler)  # type: ignore
+
+
+# Logfire Config
+if settings.LOGFIRE_TOKEN:
+    logfire.configure(
+        service_name="heavyweight-mongodb",
+        token=settings.LOGFIRE_TOKEN,
+        environment="dev" if settings.DEBUG else "prod",
+    )
+    logfire.instrument_fastapi(app)
+    logfire.instrument_pymongo()
 
 
 # Health Check

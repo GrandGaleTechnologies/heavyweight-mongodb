@@ -1,1 +1,0 @@
-"""This module contains the database sqlalchemy models for the example module."""
