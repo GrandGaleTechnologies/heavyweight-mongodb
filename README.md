@@ -81,13 +81,22 @@ git clone https://github.com/GrandGaleTechnologies/heavyweight-mongodb
 cd heavyweight-mongodb
 ```
 
-### 2. Install dependencies with `pip`
+2. Install dependencies
+
+#### Using `uv` (recommended)
 
 ```bash
-NOTE: py or python3 depending on your OS
-$ py -m venv .venv
-$ .venv\Scripts\activate # for Windows
-$ pip install -r requirements.txt
+# Optional: add uvloop 
+uv add uvloop
+
+uv venv
+
+# Optional: add uvloop 
+# Install dependencies from the lock file  
+uv sync  
+
+# Optional: install uvloop for better performance  
+uv pip install uvloop  
 ```
 
 ### 3. Configure environment
